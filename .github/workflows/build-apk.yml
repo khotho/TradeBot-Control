@@ -1,0 +1,46 @@
+name: Build TradeBot APK
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Extract TradeBot source
+        run: |
+          unzip -o TradeBot_Control_v0.1_flutter_source.zip -d /tmp/tradebot
+
+      - name: Create Android project
+        run: |
+          flutter create --platforms=android --project-name tradebot_control build_app
+
+      - name: Install TradeBot source
+        run: |
+          rm -rf build_app/lib
+          cp -r /tmp/tradebot/tradebot_app/lib build_app/lib
+          cp /tmp/tradebot/tradebot_app/pubspec.yaml build_app/pubspec.yaml
+
+      - name: Get Flutter packages
+        working-directory: build_app
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: build_app
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TradeBot-Control-APK
+          path: build_app/build/app/outputs/flutter-apk/app-release.apk
